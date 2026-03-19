@@ -73,3 +73,5 @@
 ** xref:operations/monitoring.adoc[Monitoring]
 ** xref:operations/kubernetes.adoc[Running on Kubernetes]
 ** xref:operations/openshift.adoc[Running on Openshift]
+* Developer Guide
+** xref:development/ci-workflows.adoc[Debezium GitHub Actions CI Architecture]
