@@ -149,7 +149,7 @@ To identify if a failure is related to a known JIRA issue, you can search the co
 
 [source,bash]
 ----
-grep -rni "DBZ-*"
+grep -rni "@Flaky"
 ----
 
 === Logs
