@@ -38,12 +38,43 @@ public class MySqlConnection extends BinlogConnectorConnection {
             });
         }
         catch (SQLException e) {
-            LOGGER.info("Using '{}' to get binary log status", MASTER_STATUS_STATEMENT);
+            if (isNetworkError(e)) {
+                throw new DebeziumException("Failed to establish connection with the database: ", e);
+            }
+
+            try {
+                String version = queryAndMap("SELECT VERSION()", rs -> {
+                    return rs.next() ? rs.getString(1) : "unknown";
+                });
+
+                String[] parts = version.split("\\.");
+                int major = Integer.parseInt(parts[0]);  // 8
+                int minor = Integer.parseInt(parts[1]);  // 4
+
+                if (major > 8 || (major == 8 && minor >= 4)) {
+                    throw new DebeziumException("MySQL version " + version +
+                            " should support SHOW BINARY LOG STATUS but it failed. Check database permissions or connectivity.", e);
+                }
+
+                LOGGER.info("MySQL version {} detected, falling back to '{}'", version, MASTER_STATUS_STATEMENT);
+            }
+            catch (SQLException ve) {
+                LOGGER.warn("Could not determine MySQL version during fallback detection: {}", ve.getMessage());
+            }
+            catch (NumberFormatException nfe) {
+                LOGGER.warn("Could not parse MySQL version string during fallback detection: {}", nfe.getMessage());
+            }
+
             binaryLogStatusStatement = MASTER_STATUS_STATEMENT;
             return;
         }
         LOGGER.info("Using '{}' to get binary log status", BINARY_LOG_STATUS_STATEMENT);
         binaryLogStatusStatement = BINARY_LOG_STATUS_STATEMENT;
+    }
+
+    public boolean isNetworkError(SQLException e) {
+        String sqlState = e.getSQLState();
+        return sqlState != null && sqlState.startsWith("08"); // Codes starting with "08" are connection-related
     }
 
     public String binaryLogStatusStatement() {
