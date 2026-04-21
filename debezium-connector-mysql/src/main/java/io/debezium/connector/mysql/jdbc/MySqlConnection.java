@@ -48,8 +48,8 @@ public class MySqlConnection extends BinlogConnectorConnection {
                 });
 
                 String[] parts = version.split("\\.");
-                int major = Integer.parseInt(parts[0]);  // 8
-                int minor = Integer.parseInt(parts[1]);  // 4
+                int major = Integer.parseInt(parts[0]); // 8
+                int minor = Integer.parseInt(parts[1]); // 4
 
                 if (major > 8 || (major == 8 && minor >= 4)) {
                     throw new DebeziumException("MySQL version " + version +
@@ -72,9 +72,20 @@ public class MySqlConnection extends BinlogConnectorConnection {
         binaryLogStatusStatement = BINARY_LOG_STATUS_STATEMENT;
     }
 
-    public boolean isNetworkError(SQLException e) {
+    public static boolean isNetworkError(SQLException e) {
         String sqlState = e.getSQLState();
-        return sqlState != null && sqlState.startsWith("08"); // Codes starting with "08" are connection-related
+
+        // Temporary debug logging
+        LOGGER.info("DEBUG isNetworkError: SQLState={}, Message={}", sqlState, e.getMessage());
+
+        if (sqlState == null) {
+            return false;
+        }
+
+        return sqlState.equals("08001") // Cannot connect to server
+                || sqlState.equals("08003") // Connection does not exist
+                || sqlState.equals("08006") // Connection failure
+                || sqlState.equals("08S01"); // Communication link failure
     }
 
     public String binaryLogStatusStatement() {
